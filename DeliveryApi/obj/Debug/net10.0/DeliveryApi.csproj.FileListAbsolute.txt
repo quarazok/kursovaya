@@ -37,9 +37,6 @@ D:\kursovaya\DeliveryApi\bin\Debug\net10.0\Microsoft.OpenApi.dll
 D:\kursovaya\DeliveryApi\bin\Debug\net10.0\Microsoft.SqlServer.Server.dll
 D:\kursovaya\DeliveryApi\bin\Debug\net10.0\Microsoft.Win32.SystemEvents.dll
 D:\kursovaya\DeliveryApi\bin\Debug\net10.0\Mono.TextTemplating.dll
-D:\kursovaya\DeliveryApi\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagger.dll
-D:\kursovaya\DeliveryApi\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
-D:\kursovaya\DeliveryApi\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 D:\kursovaya\DeliveryApi\bin\Debug\net10.0\System.ClientModel.dll
 D:\kursovaya\DeliveryApi\bin\Debug\net10.0\System.CodeDom.dll
 D:\kursovaya\DeliveryApi\bin\Debug\net10.0\System.Composition.AttributedModel.dll
@@ -155,3 +152,5 @@ D:\kursovaya\DeliveryApi\obj\Debug\net10.0\refint\DeliveryApi.dll
 D:\kursovaya\DeliveryApi\obj\Debug\net10.0\DeliveryApi.pdb
 D:\kursovaya\DeliveryApi\obj\Debug\net10.0\DeliveryApi.genruntimeconfig.cache
 D:\kursovaya\DeliveryApi\obj\Debug\net10.0\ref\DeliveryApi.dll
+D:\kursovaya\DeliveryApi\obj\Debug\net10.0\DeliveryApi.sourcelink.json
+D:\kursovaya\DeliveryApi\bin\Debug\net10.0\Scalar.AspNetCore.dll
