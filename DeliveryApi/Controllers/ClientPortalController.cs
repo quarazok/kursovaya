@@ -202,6 +202,35 @@ public class ClientPortalController : ControllerBase
         return Ok(order);
     }
 
+    // POST api/clientportal/orders/{id}/pay
+    [HttpPost("orders/{id}/pay")]
+    public async Task<IActionResult> PayOrder(int id, [FromBody] int paymentMethod)
+    {
+        var userId = GetUserId();
+        var client = await _db.Clients.FirstOrDefaultAsync(c => c.UserId == userId);
+        if (client == null) return NotFound();
+
+        var order = await _db.Orders
+            .Include(o => o.Payment)
+            .FirstOrDefaultAsync(o => o.Id == id && o.ClientId == client.Id);
+
+        if (order == null) return NotFound();
+
+        if (order.Payment == null)
+            return BadRequest("Счёт ещё не выставлен. Ожидайте.");
+
+        if (order.Payment.Status == PaymentStatus.Paid)
+            return BadRequest("Заказ уже оплачен");
+
+        order.Payment.Status        = PaymentStatus.Paid;
+        order.Payment.PaidAt        = DateTime.UtcNow;
+        order.Payment.PaymentMethod = (PaymentMethod)paymentMethod;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Оплата принята", paidAt = order.Payment.PaidAt });
+    }
+
     private int GetUserId() =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
