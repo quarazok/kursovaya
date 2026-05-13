@@ -1,13 +1,15 @@
 using DeliveryApi.Data;
 using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+        o.JsonSerializerOptions.ReferenceHandler =
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
 builder.Services.AddCors(options =>
 {
@@ -24,7 +26,12 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 app.MapOpenApi();
-app.MapScalarApiReference();
+
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/openapi/v1.json", "DeliveryApi v1");
+    options.RoutePrefix = "swagger";
+});
 
 app.UseCors("AllowAll");
 
