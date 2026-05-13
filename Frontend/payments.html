@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Платежи — Быстрая доставка</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="notification" id="notification"></div>
+
+<header>
+  <div class="header-inner">
+    <a href="index.html" class="logo">🚚 Быстрая доставка</a>
+    <nav>
+      <a href="index.html">Дашборд</a>
+      <a href="clients.html">Клиенты</a>
+      <a href="couriers.html">Курьеры</a>
+      <a href="orders.html">Заказы</a>
+      <a href="deliveries.html">Доставки</a>
+      <a href="payments.html" class="active">Платежи</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">Платежи</div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Заказ</th>
+            <th>Сумма</th>
+            <th>Метод</th>
+            <th>Статус</th>
+            <th>Дата оплаты</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody id="payments-tbody">
+          <tr><td colspan="7" class="empty-state">Загрузка...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Создать платёж</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Заказ</label>
+        <select id="f-orderId"></select>
+      </div>
+      <div class="form-group">
+        <label>Сумма (₽)</label>
+        <input type="number" id="f-amount" placeholder="1500" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Метод оплаты</label>
+        <select id="f-method">
+          <option value="0">Наличные</option>
+          <option value="1">Карта</option>
+          <option value="2">Перевод</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="createPayment()">Добавить платёж</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE     = 'http://localhost:5206/api';
+const API_PAYMENTS = `${API_BASE}/payments`;
+
+const METHOD_MAP = { 0: 'Наличные', 1: 'Карта', 2: 'Перевод' };
+const STATUS_MAP = {
+  0: ['Ожидает', 'pending'],
+  1: ['Оплачен',  'paid'],
+  2: ['Отменён',  'cancelled'],
+};
+
+function notify(msg, type = 'success') {
+  const el = document.getElementById('notification');
+  el.textContent = msg;
+  el.className = `notification ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+async function init() {
+  try {
+    const orders = await fetch(`${API_BASE}/orders`).then(r => r.json());
+    const sel = document.getElementById('f-orderId');
+    sel.innerHTML = '';
+    orders.forEach(o => {
+      sel.appendChild(new Option(`#${o.id} — ${o.deliveryAddress}`, o.id));
+    });
+    if (sel.options.length === 0) {
+      sel.appendChild(new Option('Нет заказов', ''));
+    }
+  } catch (e) { /* ignore */ }
+
+  loadPayments();
+}
+
+async function loadPayments() {
+  try {
+    const r = await fetch(API_PAYMENTS);
+    if (!r.ok) throw new Error(r.status);
+    const payments = await r.json();
+    const tbody = document.getElementById('payments-tbody');
+    if (payments.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Платежей пока нет</td></tr>';
+      return;
+    }
+    tbody.innerHTML = payments.map(p => {
+      const [label, cls] = STATUS_MAP[p.status] ?? ['—', 'pending'];
+      const method  = METHOD_MAP[p.paymentMethod] ?? '—';
+      const paidAt  = p.paidAt ? new Date(p.paidAt).toLocaleString('ru-RU') : '—';
+      const amount  = Number(p.amount).toLocaleString('ru-RU', { minimumFractionDigits: 2 });
+
+      const actionBtns = p.status === 0
+        ? `<button class="btn btn-success btn-sm" onclick="updateStatus(${p.id}, 1)">Оплачено</button>
+           <button class="btn btn-danger btn-sm" onclick="updateStatus(${p.id}, 2)">Отменить</button>`
+        : '';
+
+      return `<tr>
+        <td>${p.id}</td>
+        <td>#${p.orderId}</td>
+        <td>${amount} ₽</td>
+        <td>${method}</td>
+        <td><span class="badge badge-${cls}">${label}</span></td>
+        <td>${paidAt}</td>
+        <td>
+          <div class="actions-cell">
+            ${actionBtns}
+            <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})">Удалить</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('payments-tbody').innerHTML =
+      '<tr><td colspan="7" class="empty-state" style="color:#D32F2F">Ошибка загрузки.</td></tr>';
+  }
+}
+
+async function createPayment() {
+  const orderId       = Number(document.getElementById('f-orderId').value);
+  const amount        = parseFloat(document.getElementById('f-amount').value);
+  const paymentMethod = Number(document.getElementById('f-method').value);
+
+  if (!orderId || isNaN(amount) || amount <= 0) {
+    notify('Выберите заказ и укажите сумму', 'error');
+    return;
+  }
+
+  try {
+    const r = await fetch(API_PAYMENTS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, amount, paymentMethod }),
+    });
+    if (!r.ok) throw new Error(await r.text() || r.status);
+    notify('Платёж добавлен');
+    document.getElementById('f-amount').value = '';
+    loadPayments();
+  } catch (e) {
+    notify('Ошибка: ' + e.message, 'error');
+  }
+}
+
+async function updateStatus(id, status) {
+  try {
+    const r = await fetch(`${API_PAYMENTS}/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Number(status)),
+    });
+    if (!r.ok) throw new Error(await r.text() || r.status);
+    notify(status === 1 ? 'Платёж отмечен как оплаченный' : 'Платёж отменён');
+    loadPayments();
+  } catch (e) {
+    notify('Ошибка: ' + e.message, 'error');
+  }
+}
+
+async function deletePayment(id) {
+  if (!confirm(`Удалить платёж #${id}?`)) return;
+  try {
+    const r = await fetch(`${API_PAYMENTS}/${id}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(r.status);
+    notify('Платёж удалён');
+    loadPayments();
+  } catch (e) {
+    notify('Ошибка удаления: ' + e.message, 'error');
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>
