@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход — Быстрая доставка</title>
+  <style>
+    :root { --orange:#FF6600; --orange-dark:#CC5200; --bg:#F8F8F8; --white:#fff; --border:#E0E0E0; --muted:#777; --radius:8px; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+    .box { background:var(--white); border-radius:var(--radius); box-shadow:0 4px 20px rgba(0,0,0,0.08); padding:40px; width:100%; max-width:400px; }
+    .logo { text-align:center; font-size:22px; font-weight:800; color:var(--orange); margin-bottom:6px; }
+    .subtitle { text-align:center; color:var(--muted); font-size:13px; margin-bottom:28px; }
+    .form-group { margin-bottom:14px; }
+    label { display:block; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:5px; }
+    input { width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; outline:none; transition:border-color 0.15s; }
+    input:focus { border-color:var(--orange); box-shadow:0 0 0 2px rgba(255,102,0,0.12); }
+    .btn { width:100%; padding:11px; background:var(--orange); color:#fff; border:none; border-radius:var(--radius); font-size:15px; font-weight:700; cursor:pointer; margin-top:6px; transition:background 0.15s; }
+    .btn:hover { background:var(--orange-dark); }
+    .btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .err { color:#D32F2F; font-size:13px; text-align:center; margin-top:10px; min-height:18px; }
+    .links { text-align:center; margin-top:18px; font-size:13px; color:var(--muted); }
+    .links a { color:var(--orange); text-decoration:none; font-weight:600; }
+    .links a:hover { text-decoration:underline; }
+    .back { display:block; text-align:center; margin-bottom:18px; font-size:13px; color:var(--muted); text-decoration:none; }
+    .back:hover { color:var(--orange); }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <a href="index.html" class="back">← На главную</a>
+  <div class="logo">🚚 Быстрая доставка</div>
+  <div class="subtitle">Войдите в личный кабинет</div>
+
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="ivan@example.com" autocomplete="email">
+  </div>
+  <div class="form-group">
+    <label>Пароль</label>
+    <input type="password" id="password" placeholder="••••••" autocomplete="current-password">
+  </div>
+
+  <div class="err" id="err"></div>
+  <button class="btn" id="btn" onclick="login()">Войти</button>
+
+  <div class="links">
+    Нет аккаунта? <a href="register.html">Зарегистрироваться</a>
+  </div>
+</div>
+
+<script>
+if (localStorage.getItem('client_token')) window.location.href = 'dashboard.html';
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+async function login() {
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errEl    = document.getElementById('err');
+  const btn      = document.getElementById('btn');
+
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Введите email и пароль'; return; }
+
+  btn.disabled = true; btn.textContent = 'Вход...';
+
+  try {
+    const r = await fetch('http://localhost:5206/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const text = await r.text();
+    if (!r.ok) { errEl.textContent = text || 'Неверный email или пароль'; return; }
+
+    const data = JSON.parse(text);
+
+    if (data.role !== 'Client') {
+      errEl.textContent = 'Этот аккаунт не является клиентским. Используйте CRM-систему.';
+      return;
+    }
+
+    localStorage.setItem('client_token',     data.token);
+    localStorage.setItem('client_firstName', data.firstName);
+    localStorage.setItem('client_lastName',  data.lastName);
+    localStorage.setItem('client_role',      data.role);
+
+    window.location.href = 'dashboard.html';
+  } catch (e) {
+    errEl.textContent = 'Не удалось подключиться к серверу';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Войти';
+  }
+}
+</script>
+
+</body>
+</html>

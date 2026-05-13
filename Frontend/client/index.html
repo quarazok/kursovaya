@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Быстрая доставка — Курьерская служба</title>
+  <style>
+    :root {
+      --orange: #FF6600;
+      --orange-dark: #CC5200;
+      --text: #222;
+      --muted: #666;
+      --bg: #F8F8F8;
+      --white: #fff;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: var(--text); background: var(--white); }
+
+    /* HEADER */
+    header { background: var(--white); border-bottom: 3px solid var(--orange); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .client-header-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 24px; }
+    .logo { font-size: 20px; font-weight: 700; color: var(--orange); text-decoration: none; }
+    .header-nav { display: flex; gap: 8px; margin-left: auto; }
+    .c-btn { display: inline-block; padding: 8px 20px; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: background 0.15s; }
+    .c-btn-primary { background: var(--orange); color: #fff; }
+    .c-btn-primary:hover { background: var(--orange-dark); }
+    .c-btn-outline { background: transparent; color: var(--orange); border: 2px solid var(--orange); }
+    .c-btn-outline:hover { background: #FFF3EE; }
+
+    /* HERO */
+    .hero { background: linear-gradient(135deg, #FF6600 0%, #FF9940 100%); color: #fff; padding: 80px 24px; text-align: center; }
+    .hero h1 { font-size: 42px; font-weight: 800; margin-bottom: 16px; letter-spacing: -1px; }
+    .hero p { font-size: 18px; opacity: 0.92; max-width: 520px; margin: 0 auto 36px; line-height: 1.6; }
+    .hero-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .c-btn-white { background: #fff; color: var(--orange); font-size: 16px; padding: 12px 32px; }
+    .c-btn-white:hover { background: #f0f0f0; }
+    .c-btn-ghost { background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.7); font-size: 16px; padding: 12px 32px; }
+    .c-btn-ghost:hover { background: rgba(255,255,255,0.15); }
+
+    /* HOW IT WORKS */
+    section { max-width: 1100px; margin: 0 auto; padding: 64px 24px; }
+    .section-title { font-size: 30px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    .section-sub { text-align: center; color: var(--muted); margin-bottom: 48px; font-size: 15px; }
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 28px; }
+    .step { text-align: center; padding: 32px 20px; background: var(--bg); border-radius: var(--radius); }
+    .step-icon { font-size: 40px; margin-bottom: 14px; }
+    .step-num { display: inline-block; background: var(--orange); color: #fff; width: 28px; height: 28px; border-radius: 50%; font-size: 13px; font-weight: 700; line-height: 28px; margin-bottom: 12px; }
+    .step h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .step p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* BENEFITS */
+    .benefits-bg { background: var(--bg); }
+    .benefits { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    .benefit { background: var(--white); border-radius: var(--radius); padding: 24px; border-left: 4px solid var(--orange); }
+    .benefit-icon { font-size: 28px; margin-bottom: 10px; }
+    .benefit h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .benefit p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    /* CTA */
+    .cta { background: linear-gradient(135deg, #222 0%, #444 100%); color: #fff; text-align: center; padding: 64px 24px; }
+    .cta h2 { font-size: 30px; font-weight: 700; margin-bottom: 12px; }
+    .cta p { font-size: 15px; opacity: 0.8; margin-bottom: 32px; }
+
+    /* FOOTER */
+    footer { background: #111; color: #aaa; text-align: center; padding: 20px; font-size: 13px; }
+    footer span { color: var(--orange); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="client-header-inner">
+    <a href="index.html" class="logo">🚚 Быстрая доставка</a>
+    <div class="header-nav" id="header-nav">
+      <a href="login.html" class="c-btn c-btn-outline">Войти</a>
+      <a href="register.html" class="c-btn c-btn-primary">Зарегистрироваться</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Доставим быстро<br>и надёжно</h1>
+  <p>Курьерская служба «Быстрая доставка» — отправляйте посылки по городу легко и без хлопот</p>
+  <div class="hero-btns">
+    <a href="register.html" class="c-btn c-btn-white" id="cta-main">Сделать заказ</a>
+    <a href="login.html" class="c-btn c-btn-ghost" id="cta-login">Войти в личный кабинет</a>
+  </div>
+</div>
+
+<!-- КАК ЭТО РАБОТАЕТ -->
+<section>
+  <div class="section-title">Как это работает</div>
+  <div class="section-sub">Три простых шага до успешной доставки</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-icon">📝</div>
+      <div class="step-num">1</div>
+      <h3>Оформите заказ</h3>
+      <p>Зарегистрируйтесь и укажите адреса отправки и доставки. Это займёт меньше минуты.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">🚴</div>
+      <div class="step-num">2</div>
+      <h3>Назначим курьера</h3>
+      <p>Наши операторы назначат свободного курьера и он выедет к вам в ближайшее время.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">✅</div>
+      <div class="step-num">3</div>
+      <h3>Получите посылку</h3>
+      <p>Отслеживайте статус доставки в личном кабинете в режиме реального времени.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ПРЕИМУЩЕСТВА -->
+<div class="benefits-bg">
+  <section>
+    <div class="section-title">Почему выбирают нас</div>
+    <div class="section-sub">Надёжность и удобство — наш приоритет</div>
+    <div class="benefits">
+      <div class="benefit">
+        <div class="benefit-icon">⚡</div>
+        <h3>Быстрая доставка</h3>
+        <p>Доставляем в течение дня по всему городу</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">📍</div>
+        <h3>Отслеживание онлайн</h3>
+        <p>Следите за статусом заказа в личном кабинете</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">💳</div>
+        <h3>Удобная оплата</h3>
+        <p>Наличные, карта или банковский перевод</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">🔒</div>
+        <h3>Безопасность</h3>
+        <p>Ваши данные и груз надёжно защищены</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- CTA -->
+<div class="cta">
+  <h2>Готовы отправить посылку?</h2>
+  <p>Зарегистрируйтесь бесплатно и сделайте первый заказ прямо сейчас</p>
+  <a href="register.html" class="c-btn c-btn-primary" id="cta-bottom" style="font-size:16px;padding:12px 36px;">Начать</a>
+</div>
+
+<footer>
+  © 2024 <span>Быстрая доставка</span>. Все права защищены.
+</footer>
+
+<script>
+// Если уже залогинен — меняем кнопки
+if (localStorage.getItem('client_token')) {
+  document.getElementById('header-nav').innerHTML =
+    '<a href="dashboard.html" class="c-btn c-btn-primary">Мои заказы</a>';
+  document.getElementById('cta-main').href    = 'dashboard.html';
+  document.getElementById('cta-main').textContent = 'Мои заказы';
+  document.getElementById('cta-login').style.display = 'none';
+  document.getElementById('cta-bottom').href = 'dashboard.html';
+  document.getElementById('cta-bottom').textContent = 'Перейти в кабинет';
+}
+</script>
+
+</body>
+</html>
