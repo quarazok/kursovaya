@@ -45,7 +45,7 @@
 
 <script>
 if (localStorage.getItem('token')) {
-  window.location.href = 'index.html';
+  window.location.href = 'dashboard.html';
 }
 
 document.addEventListener('keydown', e => {
@@ -88,7 +88,7 @@ async function login() {
     localStorage.setItem('lastName',  data.lastName);
     localStorage.setItem('role',      data.role);
 
-    window.location.href = 'index.html';
+    window.location.href = 'dashboard.html';
   } catch (e) {
     errEl.textContent = 'Не удалось подключиться к серверу';
   } finally {
