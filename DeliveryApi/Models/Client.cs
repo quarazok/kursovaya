@@ -22,5 +22,7 @@ public class Client
     [EmailAddress(ErrorMessage = "Некорректный формат email")]
     public string? Email { get; set; }
 
+    public int? UserId { get; set; }
+
     public ICollection<Order> Orders { get; set; } = new List<Order>();
 }

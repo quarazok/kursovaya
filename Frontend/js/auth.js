@@ -16,6 +16,11 @@ window.fetch = async function (url, options = {}) {
 function requireAuth() {
   if (!localStorage.getItem('token')) {
     window.location.href = 'login.html';
+    return;
+  }
+  // Клиентам вход в CRM запрещён
+  if (localStorage.getItem('role') === 'Client') {
+    window.location.href = '../client/dashboard.html';
   }
 }
 

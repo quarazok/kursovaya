@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DeliveryApi.Models;
 
-public enum UserRole { Employee = 0, Admin = 1 }
+public enum UserRole { Employee = 0, Admin = 1, Client = 2 }
 
 public class User
 {

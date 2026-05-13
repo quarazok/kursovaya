@@ -47,5 +47,11 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Payment>()
             .Property(p => p.Amount)
             .HasColumnType("decimal(10,2)");
+
+        // Один User — один Client-профиль
+        modelBuilder.Entity<Client>()
+            .HasIndex(c => c.UserId)
+            .IsUnique()
+            .HasFilter("[UserId] IS NOT NULL");
     }
 }
