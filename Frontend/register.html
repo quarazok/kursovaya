@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Регистрация — Быстрая доставка</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); padding: 24px; }
+    .auth-box { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 40px; width: 100%; max-width: 480px; }
+    .auth-logo { text-align: center; font-size: 22px; font-weight: 700; color: var(--orange); margin-bottom: 8px; }
+    .auth-subtitle { text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 28px; }
+    .auth-box .form-group { margin-bottom: 14px; }
+    .auth-box .form-group input { width: 100%; }
+    .auth-btn { width: 100%; padding: 10px; font-size: 15px; margin-top: 6px; }
+    .auth-link { text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-muted); }
+    .auth-link a { color: var(--orange); text-decoration: none; font-weight: 600; }
+    .auth-link a:hover { text-decoration: underline; }
+    .error-msg { color: #D32F2F; font-size: 13px; margin-top: 10px; text-align: center; min-height: 20px; }
+  </style>
+</head>
+<body>
+
+<div class="auth-box">
+  <div class="auth-logo">🚚 Быстрая доставка</div>
+  <div class="auth-subtitle">Создать аккаунт сотрудника</div>
+
+  <div class="form-group">
+    <label>Имя</label>
+    <input type="text" id="firstName" placeholder="Иван" autocomplete="given-name">
+  </div>
+  <div class="form-group">
+    <label>Фамилия</label>
+    <input type="text" id="lastName" placeholder="Иванов" autocomplete="family-name">
+  </div>
+  <div class="form-group">
+    <label>Телефон</label>
+    <input type="tel" id="phone" placeholder="+7 900 000-00-00" autocomplete="tel">
+  </div>
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="ivan@example.com" autocomplete="email">
+  </div>
+  <div class="form-group">
+    <label>Пароль</label>
+    <input type="password" id="password" placeholder="Не менее 6 символов" autocomplete="new-password">
+  </div>
+  <div class="form-group">
+    <label>Подтвердить пароль</label>
+    <input type="password" id="confirmPassword" placeholder="Повторите пароль" autocomplete="new-password">
+  </div>
+
+  <div class="error-msg" id="error-msg"></div>
+
+  <button class="btn btn-primary auth-btn" onclick="register()" id="btn-reg">Зарегистрироваться</button>
+
+  <div class="auth-link">
+    Уже есть аккаунт? <a href="login.html">Войти</a>
+  </div>
+</div>
+
+<script>
+if (localStorage.getItem('token')) {
+  window.location.href = 'index.html';
+}
+
+async function register() {
+  const firstName     = document.getElementById('firstName').value.trim();
+  const lastName      = document.getElementById('lastName').value.trim();
+  const phone         = document.getElementById('phone').value.trim();
+  const email         = document.getElementById('email').value.trim();
+  const password      = document.getElementById('password').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  const errEl         = document.getElementById('error-msg');
+  const btn           = document.getElementById('btn-reg');
+
+  errEl.textContent = '';
+
+  if (!firstName || !lastName || !phone || !email || !password || !confirmPassword) {
+    errEl.textContent = 'Заполните все поля';
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    errEl.textContent = 'Пароли не совпадают';
+    return;
+  }
+
+  if (password.length < 6) {
+    errEl.textContent = 'Пароль должен содержать не менее 6 символов';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Регистрация...';
+
+  try {
+    const r = await fetch('http://localhost:5206/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName, lastName, phone, email, password, confirmPassword }),
+    });
+
+    if (!r.ok) {
+      const msg = await r.text();
+      errEl.textContent = msg || 'Ошибка регистрации';
+      return;
+    }
+
+    const data = await r.json();
+    localStorage.setItem('token',     data.token);
+    localStorage.setItem('userId',    data.id);
+    localStorage.setItem('firstName', data.firstName);
+    localStorage.setItem('lastName',  data.lastName);
+    localStorage.setItem('role',      data.role);
+
+    window.location.href = 'index.html';
+  } catch (e) {
+    errEl.textContent = 'Не удалось подключиться к серверу';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Зарегистрироваться';
+  }
+}
+</script>
+
+</body>
+</html>
