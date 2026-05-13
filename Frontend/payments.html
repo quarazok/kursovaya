@@ -76,7 +76,11 @@
   </div>
 </main>
 
+<script src="js/auth.js"></script>
 <script>
+requireAuth();
+setupHeader();
+
 const API_BASE     = 'http://localhost:5206/api';
 const API_PAYMENTS = `${API_BASE}/payments`;
 

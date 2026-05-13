@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Пользователи — Быстрая доставка</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="notification" id="notification"></div>
+
+<header>
+  <div class="header-inner">
+    <a href="index.html" class="logo">🚚 Быстрая доставка</a>
+    <nav>
+      <a href="index.html">Дашборд</a>
+      <a href="clients.html">Клиенты</a>
+      <a href="couriers.html">Курьеры</a>
+      <a href="orders.html">Заказы</a>
+      <a href="deliveries.html">Доставки</a>
+      <a href="payments.html">Платежи</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">Управление пользователями</div>
+
+  <!-- Статистика системы (только для админа) -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Сотрудники</div>
+      <div class="stat-value" id="s-employees">—</div>
+      <div class="stat-sub" id="s-admins">администраторов: —</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Выручка (оплачено)</div>
+      <div class="stat-value" id="s-revenue" style="font-size:22px">—</div>
+      <div class="stat-sub">сумма оплаченных платежей</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Всего заказов</div>
+      <div class="stat-value" id="s-orders">—</div>
+      <div class="stat-sub" id="s-deliveries">доставок: —</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Клиентов / Курьеров</div>
+      <div class="stat-value" id="s-clients">—</div>
+      <div class="stat-sub" id="s-couriers">курьеров: —</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Список сотрудников</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Имя</th>
+            <th>Фамилия</th>
+            <th>Email</th>
+            <th>Телефон</th>
+            <th>Роль</th>
+            <th>Зарегистрирован</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody">
+          <tr><td colspan="8" class="empty-state">Загрузка...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="js/auth.js"></script>
+<script>
+requireAuth();
+
+// Только для админа
+if (localStorage.getItem('role') !== 'Admin') {
+  window.location.href = 'index.html';
+}
+
+setupHeader();
+
+const API_USERS = 'http://localhost:5206/api/users';
+const myId = Number(localStorage.getItem('userId'));
+
+function notify(msg, type = 'success') {
+  const el = document.getElementById('notification');
+  el.textContent = msg;
+  el.className = `notification ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+async function loadStats() {
+  try {
+    const r = await fetch(`${API_USERS}/stats`);
+    if (!r.ok) return;
+    const s = await r.json();
+    document.getElementById('s-employees').textContent = s.totalUsers;
+    document.getElementById('s-admins').textContent    = `администраторов: ${s.totalAdmins}`;
+    document.getElementById('s-revenue').textContent   =
+      Number(s.totalRevenue).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) + ' ₽';
+    document.getElementById('s-orders').textContent    = s.totalOrders;
+    document.getElementById('s-deliveries').textContent = `доставок: ${s.totalDeliveries}`;
+    document.getElementById('s-clients').textContent   = s.totalClients;
+    document.getElementById('s-couriers').textContent  = `курьеров: ${s.totalCouriers}`;
+  } catch (e) { /* ignore */ }
+}
+
+async function loadUsers() {
+  try {
+    const r = await fetch(API_USERS);
+    if (!r.ok) throw new Error(r.status);
+    const users = await r.json();
+    const tbody = document.getElementById('users-tbody');
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Нет пользователей</td></tr>';
+      return;
+    }
+    tbody.innerHTML = users.map(u => {
+      const isMe    = u.id === myId;
+      const roleBadge = u.role === 1
+        ? '<span class="badge badge-assigned">Админ</span>'
+        : '<span class="badge badge-new">Сотрудник</span>';
+      const date = new Date(u.createdAt).toLocaleDateString('ru-RU');
+      const roleBtn = isMe ? '' : (u.role === 0
+        ? `<button class="btn btn-secondary btn-sm" onclick="changeRole(${u.id}, 1)">Сделать админом</button>`
+        : `<button class="btn btn-secondary btn-sm" onclick="changeRole(${u.id}, 0)">Сделать сотрудником</button>`);
+      const delBtn = isMe ? '' :
+        `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">Удалить</button>`;
+      return `<tr>
+        <td>${u.id}${isMe ? ' <span style="color:var(--orange);font-size:11px">(вы)</span>' : ''}</td>
+        <td>${u.firstName}</td>
+        <td>${u.lastName}</td>
+        <td>${u.email}</td>
+        <td>${u.phone}</td>
+        <td>${roleBadge}</td>
+        <td>${date}</td>
+        <td><div class="actions-cell">${roleBtn}${delBtn}</div></td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('users-tbody').innerHTML =
+      '<tr><td colspan="8" class="empty-state" style="color:#D32F2F">Ошибка загрузки.</td></tr>';
+  }
+}
+
+async function changeRole(id, role) {
+  try {
+    const r = await fetch(`${API_USERS}/${id}/role`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(role),
+    });
+    if (!r.ok) throw new Error(r.status);
+    notify(role === 1 ? 'Пользователь назначен администратором' : 'Пользователь стал сотрудником');
+    loadUsers();
+    loadStats();
+  } catch (e) {
+    notify('Ошибка: ' + e.message, 'error');
+  }
+}
+
+async function deleteUser(id) {
+  if (!confirm('Удалить пользователя?')) return;
+  try {
+    const r = await fetch(`${API_USERS}/${id}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(r.status);
+    notify('Пользователь удалён');
+    loadUsers();
+    loadStats();
+  } catch (e) {
+    notify('Ошибка удаления: ' + e.message, 'error');
+  }
+}
+
+loadStats();
+loadUsers();
+</script>
+
+</body>
+</html>
