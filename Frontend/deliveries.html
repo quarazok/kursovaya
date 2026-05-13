@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Доставки — Быстрая доставка</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="notification" id="notification"></div>
+
+<header>
+  <div class="header-inner">
+    <a href="index.html" class="logo">🚚 Быстрая доставка</a>
+    <nav>
+      <a href="index.html">Дашборд</a>
+      <a href="clients.html">Клиенты</a>
+      <a href="couriers.html">Курьеры</a>
+      <a href="orders.html">Заказы</a>
+      <a href="deliveries.html" class="active">Доставки</a>
+      <a href="payments.html">Платежи</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">Доставки</div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Заказ</th>
+            <th>Курьер</th>
+            <th>Назначена</th>
+            <th>Завершена</th>
+            <th>Статус</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody id="deliveries-tbody">
+          <tr><td colspan="7" class="empty-state">Загрузка...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Создать доставку</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Заказ</label>
+        <select id="f-orderId"></select>
+      </div>
+      <div class="form-group">
+        <label>Курьер (свободные)</label>
+        <select id="f-courierId"></select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="createDelivery()">Назначить доставку</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE      = 'http://localhost:5206/api';
+const API_DELIVERIES = `${API_BASE}/deliveries`;
+
+const STATUS_MAP = {
+  0: ['Назначена',  'assigned'],
+  1: ['В пути',     'inprogress'],
+  2: ['Завершена',  'completed'],
+  3: ['Не удалась', 'failed'],
+};
+
+function notify(msg, type = 'success') {
+  const el = document.getElementById('notification');
+  el.textContent = msg;
+  el.className = `notification ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+async function init() {
+  try {
+    const [orders, couriers] = await Promise.all([
+      fetch(`${API_BASE}/orders`).then(r => r.json()),
+      fetch(`${API_BASE}/couriers/available`).then(r => r.json()),
+    ]);
+
+    const orderSel = document.getElementById('f-orderId');
+    orders.filter(o => o.status === 0).forEach(o => {
+      orderSel.appendChild(new Option(`#${o.id} — ${o.deliveryAddress}`, o.id));
+    });
+    if (orderSel.options.length === 0) {
+      orderSel.appendChild(new Option('Нет новых заказов', ''));
+    }
+
+    const courierSel = document.getElementById('f-courierId');
+    couriers.forEach(c => {
+      courierSel.appendChild(new Option(`${c.firstName} ${c.lastName}`, c.id));
+    });
+    if (courierSel.options.length === 0) {
+      courierSel.appendChild(new Option('Нет свободных курьеров', ''));
+    }
+  } catch (e) { /* ignore */ }
+
+  loadDeliveries();
+}
+
+async function loadDeliveries() {
+  try {
+    const r = await fetch(API_DELIVERIES);
+    if (!r.ok) throw new Error(r.status);
+    const deliveries = await r.json();
+    const tbody = document.getElementById('deliveries-tbody');
+    if (deliveries.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Доставок пока нет</td></tr>';
+      return;
+    }
+    tbody.innerHTML = deliveries.map(d => {
+      const [label, cls] = STATUS_MAP[d.status] ?? ['—', 'assigned'];
+      const courierName = d.courier ? `${d.courier.firstName} ${d.courier.lastName}` : `#${d.courierId}`;
+      const assigned  = new Date(d.assignedAt).toLocaleString('ru-RU');
+      const completed = d.completedAt ? new Date(d.completedAt).toLocaleString('ru-RU') : '—';
+      const completeBtn = d.status !== 2
+        ? `<button class="btn btn-success btn-sm" onclick="completeDelivery(${d.id})">Завершить</button>`
+        : '';
+      return `<tr>
+        <td>${d.id}</td>
+        <td>#${d.orderId}</td>
+        <td>${courierName}</td>
+        <td>${assigned}</td>
+        <td>${completed}</td>
+        <td><span class="badge badge-${cls}">${label}</span></td>
+        <td>
+          <div class="actions-cell">
+            ${completeBtn}
+            <button class="btn btn-danger btn-sm" onclick="deleteDelivery(${d.id})">Удалить</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('deliveries-tbody').innerHTML =
+      '<tr><td colspan="7" class="empty-state" style="color:#D32F2F">Ошибка загрузки.</td></tr>';
+  }
+}
+
+async function createDelivery() {
+  const orderId   = Number(document.getElementById('f-orderId').value);
+  const courierId = Number(document.getElementById('f-courierId').value);
+  if (!orderId || !courierId) {
+    notify('Выберите заказ и курьера', 'error');
+    return;
+  }
+  try {
+    const r = await fetch(API_DELIVERIES, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, courierId }),
+    });
+    if (!r.ok) throw new Error(await r.text() || r.status);
+    notify('Доставка назначена');
+    await init();
+  } catch (e) {
+    notify('Ошибка: ' + e.message, 'error');
+  }
+}
+
+async function completeDelivery(id) {
+  if (!confirm(`Завершить доставку #${id}?`)) return;
+  try {
+    const r = await fetch(`${API_DELIVERIES}/${id}/complete`, { method: 'POST' });
+    if (!r.ok) throw new Error(await r.text() || r.status);
+    notify('Доставка завершена');
+    await init();
+  } catch (e) {
+    notify('Ошибка: ' + e.message, 'error');
+  }
+}
+
+async function deleteDelivery(id) {
+  if (!confirm(`Удалить доставку #${id}?`)) return;
+  try {
+    const r = await fetch(`${API_DELIVERIES}/${id}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(r.status);
+    notify('Доставка удалена');
+    await init();
+  } catch (e) {
+    notify('Ошибка удаления: ' + e.message, 'error');
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>
