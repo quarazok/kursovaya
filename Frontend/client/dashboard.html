@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Личный кабинет — Быстрая доставка</title>
+  <style>
+    :root {
+      --orange:#FF6600; --orange-dark:#CC5200; --orange-light:#FFF3EE;
+      --bg:#F8F8F8; --white:#fff; --border:#E0E0E0; --muted:#777;
+      --text:#333; --radius:8px; --shadow:0 2px 10px rgba(0,0,0,0.07);
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(--text); font-size:14px; }
+
+    /* HEADER */
+    header { background:var(--white); border-bottom:3px solid var(--orange); position:sticky; top:0; z-index:100; box-shadow:var(--shadow); }
+    .client-header-inner { max-width:1000px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:20px; }
+    .logo { font-size:18px; font-weight:800; color:var(--orange); text-decoration:none; }
+    .c-btn { display:inline-block; padding:7px 16px; border-radius:var(--radius); font-size:13px; font-weight:600; cursor:pointer; border:none; text-decoration:none; transition:background 0.15s; }
+    .c-btn-outline { background:transparent; color:var(--orange); border:2px solid var(--orange); }
+    .c-btn-outline:hover { background:var(--orange-light); }
+    .c-btn-primary { background:var(--orange); color:#fff; }
+    .c-btn-primary:hover { background:var(--orange-dark); }
+    .c-btn-sm { padding:4px 10px; font-size:12px; }
+    .c-btn-ghost { background:#eee; color:var(--text); }
+    .c-btn-ghost:hover { background:#ddd; }
+
+    /* MAIN */
+    main { max-width:1000px; margin:0 auto; padding:28px 24px; }
+    .page-title { font-size:22px; font-weight:700; margin-bottom:20px; }
+
+    /* CARD */
+    .card { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; margin-bottom:20px; }
+    .card-title { font-size:16px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+
+    /* FORM */
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+    .form-group { display:flex; flex-direction:column; gap:4px; }
+    .form-group.full { grid-column:1/-1; }
+    label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.3px; }
+    input, textarea { padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; outline:none; transition:border-color 0.15s; font-family:inherit; }
+    input:focus, textarea:focus { border-color:var(--orange); box-shadow:0 0 0 2px rgba(255,102,0,0.1); }
+    textarea { resize:vertical; min-height:60px; }
+
+    /* TABLE */
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead th { background:#F5F5F5; padding:9px 12px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--muted); border-bottom:2px solid var(--border); white-space:nowrap; }
+    tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+    tbody tr:hover { background:#FFFAF7; }
+    tbody td { padding:10px 12px; vertical-align:middle; }
+
+    /* BADGE */
+    .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; }
+    .badge-new       { background:#F5F5F5; color:#757575; }
+    .badge-assigned  { background:#E3F2FD; color:#1565C0; }
+    .badge-inprogress{ background:#FFF3E0; color:#E65100; }
+    .badge-delivered { background:#E8F5E9; color:#2E7D32; }
+    .badge-cancelled { background:#FFEBEE; color:#C62828; }
+    .badge-completed { background:#E8F5E9; color:#2E7D32; }
+    .badge-failed    { background:#FFEBEE; color:#C62828; }
+    .badge-pending   { background:#F5F5F5; color:#757575; }
+    .badge-paid      { background:#E8F5E9; color:#2E7D32; }
+
+    /* TRACKING PANEL */
+    .track-panel { display:none; background:var(--bg); border-radius:var(--radius); padding:16px; margin-top:8px; border-left:4px solid var(--orange); }
+    .track-panel.open { display:block; }
+    .track-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+    .track-item { }
+    .track-label { font-size:11px; text-transform:uppercase; letter-spacing:0.3px; color:var(--muted); font-weight:700; margin-bottom:4px; }
+    .track-value { font-size:13px; font-weight:500; }
+
+    /* NOTIFICATION */
+    .notif { position:fixed; top:0; left:0; right:0; padding:12px; text-align:center; font-size:14px; font-weight:600; z-index:200; transform:translateY(-100%); transition:transform 0.25s; }
+    .notif.show { transform:translateY(0); }
+    .notif.ok  { background:#388E3C; color:#fff; }
+    .notif.err { background:#D32F2F; color:#fff; }
+
+    .empty { text-align:center; padding:36px; color:var(--muted); }
+  </style>
+</head>
+<body>
+
+<div class="notif" id="notif"></div>
+
+<header>
+  <div class="client-header-inner">
+    <a href="index.html" class="logo">🚚 Быстрая доставка</a>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">Личный кабинет</div>
+
+  <!-- Форма создания заказа -->
+  <div class="card">
+    <div class="card-title">📦 Новый заказ</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Адрес отправки</label>
+        <input type="text" id="f-pickup" placeholder="ул. Ленина, 1, кв. 5">
+      </div>
+      <div class="form-group">
+        <label>Адрес доставки</label>
+        <input type="text" id="f-delivery" placeholder="ул. Мира, 10, оф. 3">
+      </div>
+      <div class="form-group full">
+        <label>Описание груза (необязательно)</label>
+        <textarea id="f-desc" placeholder="Хрупкий груз, документы..."></textarea>
+      </div>
+    </div>
+    <button class="c-btn c-btn-primary" onclick="createOrder()" id="btn-order">Оформить заказ</button>
+  </div>
+
+  <!-- Мои заказы -->
+  <div class="card">
+    <div class="card-title">📋 Мои заказы</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Куда</th>
+            <th>Откуда</th>
+            <th>Статус</th>
+            <th>Дата</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="orders-tbody">
+          <tr><td colspan="6" class="empty">Загрузка...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="js/client-auth.js"></script>
+<script>
+requireClientAuth();
+setupClientHeader();
+
+const API = 'http://localhost:5206/api/clientportal';
+
+const ORDER_STATUS = {
+  0: ['Новый',     'new'],
+  1: ['Назначен',  'assigned'],
+  2: ['В пути',    'inprogress'],
+  3: ['Доставлен', 'delivered'],
+  4: ['Отменён',   'cancelled'],
+};
+const DELIVERY_STATUS = {
+  0: ['Назначена',  'assigned'],
+  1: ['В пути',     'inprogress'],
+  2: ['Завершена',  'completed'],
+  3: ['Не удалась', 'failed'],
+};
+const PAYMENT_STATUS = {
+  0: ['Ожидает оплаты', 'pending'],
+  1: ['Оплачен',         'paid'],
+  2: ['Отменён',         'cancelled'],
+};
+const PAYMENT_METHOD = { 0: 'Наличные', 1: 'Карта', 2: 'Перевод' };
+
+function notify(msg, type = 'ok') {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.className = `notif ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+let openTrackId = null;
+
+async function loadOrders() {
+  try {
+    const r = await fetch(`${API}/orders`);
+    if (!r.ok) throw new Error(r.status);
+    const orders = await r.json();
+    const tbody = document.getElementById('orders-tbody');
+
+    if (orders.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">У вас ещё нет заказов. Оформите первый!</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = orders.map(o => {
+      const [slabel, scls] = ORDER_STATUS[o.status] ?? ['—', 'new'];
+      const date = new Date(o.createdAt).toLocaleDateString('ru-RU');
+
+      // Строка трекинга
+      let trackHtml = '';
+      if (o.delivery || o.payment) {
+        const [dlabel, dcls] = o.delivery ? (DELIVERY_STATUS[o.delivery.status] ?? ['—','assigned']) : ['—','new'];
+        const [plabel, pcls] = o.payment  ? (PAYMENT_STATUS[o.payment.status]   ?? ['—','pending']) : ['—','pending'];
+        const courier   = o.delivery?.courierName ?? '—';
+        const paidAt    = o.payment?.paidAt ? new Date(o.payment.paidAt).toLocaleDateString('ru-RU') : '—';
+        const amount    = o.payment ? Number(o.payment.amount).toLocaleString('ru-RU') + ' ₽' : '—';
+        const method    = o.payment ? (PAYMENT_METHOD[o.payment.paymentMethod] ?? '—') : '—';
+        const completedAt = o.delivery?.completedAt
+          ? new Date(o.delivery.completedAt).toLocaleString('ru-RU') : '—';
+
+        trackHtml = `
+          <div class="track-panel" id="track-${o.id}">
+            <div class="track-grid">
+              <div class="track-item">
+                <div class="track-label">Адрес отправки</div>
+                <div class="track-value">${o.pickupAddress}</div>
+              </div>
+              <div class="track-item">
+                <div class="track-label">Адрес доставки</div>
+                <div class="track-value">${o.deliveryAddress}</div>
+              </div>
+              ${o.description ? `<div class="track-item"><div class="track-label">Описание</div><div class="track-value">${o.description}</div></div>` : ''}
+              <div class="track-item">
+                <div class="track-label">Статус доставки</div>
+                <div class="track-value"><span class="badge badge-${dcls}">${dlabel}</span></div>
+              </div>
+              <div class="track-item">
+                <div class="track-label">Курьер</div>
+                <div class="track-value">${courier}</div>
+              </div>
+              <div class="track-item">
+                <div class="track-label">Доставлено</div>
+                <div class="track-value">${completedAt}</div>
+              </div>
+              <div class="track-item">
+                <div class="track-label">Оплата</div>
+                <div class="track-value"><span class="badge badge-${pcls}">${plabel}</span></div>
+              </div>
+              <div class="track-item">
+                <div class="track-label">Сумма / Метод</div>
+                <div class="track-value">${amount} · ${method}</div>
+              </div>
+              ${o.payment?.paidAt ? `<div class="track-item"><div class="track-label">Дата оплаты</div><div class="track-value">${paidAt}</div></div>` : ''}
+            </div>
+          </div>`;
+      }
+
+      return `
+        <tr>
+          <td>${o.id}</td>
+          <td>${o.deliveryAddress}</td>
+          <td>${o.pickupAddress}</td>
+          <td><span class="badge badge-${scls}">${slabel}</span></td>
+          <td>${date}</td>
+          <td>
+            ${(o.delivery || o.payment)
+              ? `<button class="c-btn c-btn-ghost c-btn-sm" onclick="toggleTrack(${o.id})">Подробнее</button>`
+              : '<span style="color:var(--muted);font-size:12px">ожидание</span>'}
+          </td>
+        </tr>
+        ${trackHtml ? `<tr><td colspan="6" style="padding:0 12px 10px">${trackHtml}</td></tr>` : ''}`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('orders-tbody').innerHTML =
+      '<tr><td colspan="6" class="empty" style="color:#D32F2F">Ошибка загрузки заказов.</td></tr>';
+  }
+}
+
+function toggleTrack(id) {
+  const panel = document.getElementById(`track-${id}`);
+  if (!panel) return;
+  panel.classList.toggle('open');
+}
+
+async function createOrder() {
+  const pickupAddress   = document.getElementById('f-pickup').value.trim();
+  const deliveryAddress = document.getElementById('f-delivery').value.trim();
+  const description     = document.getElementById('f-desc').value.trim() || null;
+  const btn             = document.getElementById('btn-order');
+
+  if (!pickupAddress || !deliveryAddress) {
+    notify('Укажите адреса отправки и доставки', 'err');
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Оформление...';
+
+  try {
+    const r = await fetch(`${API}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pickupAddress, deliveryAddress, description }),
+    });
+
+    if (!r.ok) {
+      const msg = await r.text();
+      notify(msg || 'Ошибка создания заказа', 'err');
+      return;
+    }
+
+    document.getElementById('f-pickup').value   = '';
+    document.getElementById('f-delivery').value = '';
+    document.getElementById('f-desc').value     = '';
+
+    notify('Заказ успешно оформлен! Ожидайте назначения курьера.');
+    loadOrders();
+  } catch (e) {
+    notify('Не удалось подключиться к серверу', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Оформить заказ';
+  }
+}
+
+loadOrders();
+</script>
+
+</body>
+</html>
