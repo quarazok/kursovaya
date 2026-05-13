@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Заказы — Быстрая доставка</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="notification" id="notification"></div>
+
+<header>
+  <div class="header-inner">
+    <a href="index.html" class="logo">🚚 Быстрая доставка</a>
+    <nav>
+      <a href="index.html">Дашборд</a>
+      <a href="clients.html">Клиенты</a>
+      <a href="couriers.html">Курьеры</a>
+      <a href="orders.html" class="active">Заказы</a>
+      <a href="deliveries.html">Доставки</a>
+      <a href="payments.html">Платежи</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">Заказы</div>
+
+  <div class="card">
+    <div class="filter-bar">
+      <div class="form-group">
+        <label>Фильтр по клиенту</label>
+        <select id="filter-client" onchange="loadOrders()">
+          <option value="">Все клиенты</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filter-client').value=''; loadOrders()">Сбросить</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Клиент</th>
+            <th>Откуда</th>
+            <th>Куда</th>
+            <th>Описание</th>
+            <th>Статус</th>
+            <th>Дата</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody id="orders-tbody">
+          <tr><td colspan="8" class="empty-state">Загрузка...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title" id="form-title">Добавить заказ</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Клиент</label>
+        <select id="f-clientId"></select>
+      </div>
+      <div class="form-group">
+        <label>Адрес отправки</label>
+        <input type="text" id="f-pickup" placeholder="ул. Ленина, 1">
+      </div>
+      <div class="form-group">
+        <label>Адрес доставки</label>
+        <input type="text" id="f-delivery" placeholder="ул. Мира, 5">
+      </div>
+      <div class="form-group">
+        <label>Описание</label>
+        <input type="text" id="f-desc" placeholder="Хрупкий груз">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveOrder()">
+        <span id="btn-label">Добавить</span>
+      </button>
+      <button class="btn btn-secondary" id="btn-cancel" onclick="cancelEdit()" style="display:none">Отмена</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_ORDERS  = 'http://localhost:5206/api/orders';
+const API_CLIENTS = 'http://localhost:5206/api/clients';
+let editId = null;
+let allClients = [];
+
+const STATUS_MAP = {
+  0: ['New',      'new'],
+  1: ['Назначен', 'assigned'],
+  2: ['В пути',   'inprogress'],
+  3: ['Доставлен','delivered'],
+  4: ['Отменён',  'cancelled'],
+};
+
+function notify(msg, type = 'success') {
+  const el = document.getElementById('notification');
+  el.textContent = msg;
+  el.className = `notification ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+async function init() {
+  try {
+    const r = await fetch(API_CLIENTS);
+    allClients = await r.json();
+
+    const filterSel = document.getElementById('filter-client');
+    const formSel   = document.getElementById('f-clientId');
+    allClients.forEach(c => {
+      const opt1 = new Option(`${c.firstName} ${c.lastName}`, c.id);
+      const opt2 = new Option(`${c.firstName} ${c.lastName}`, c.id);
+      filterSel.appendChild(opt1);
+      formSel.appendChild(opt2);
+    });
+  } catch (e) { /* ignore */ }
+  loadOrders();
+}
+
+async function loadOrders() {
+  const clientId = document.getElementById('filter-client').value;
+  const url = clientId ? `${API_ORDERS}?clientId=${clientId}` : API_ORDERS;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(r.status);
+    const orders = await r.json();
+    const tbody = document.getElementById('orders-tbody');
+    if (orders.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Заказов нет</td></tr>';
+      return;
+    }
+    tbody.innerHTML = orders.map(o => {
+      const [label, cls] = STATUS_MAP[o.status] ?? ['—', 'new'];
+      const clientName = o.client ? `${o.client.firstName} ${o.client.lastName}` : `#${o.clientId}`;
+      const date = new Date(o.createdAt).toLocaleDateString('ru-RU');
+      const statusOptions = Object.entries(STATUS_MAP).map(([val, [lbl]]) =>
+        `<option value="${val}" ${o.status == val ? 'selected' : ''}>${lbl}</option>`
+      ).join('');
+      return `<tr>
+        <td>${o.id}</td>
+        <td>${clientName}</td>
+        <td>${o.pickupAddress}</td>
+        <td>${o.deliveryAddress}</td>
+        <td>${o.description ?? '—'}</td>
+        <td>
+          <select class="inline-select" onchange="updateStatus(${o.id}, this.value)">
+            ${statusOptions}
+          </select>
+        </td>
+        <td>${date}</td>
+        <td>
+          <div class="actions-cell">
+            <button class="btn btn-secondary btn-sm" onclick="editOrder(${o.id},${o.clientId},'${esc(o.pickupAddress)}','${esc(o.deliveryAddress)}','${esc(o.description ?? '')}')">Изменить</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteOrder(${o.id})">Удалить</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('orders-tbody').innerHTML =
+      '<tr><td colspan="8" class="empty-state" style="color:#D32F2F">Ошибка загрузки.</td></tr>';
+  }
+}
+
+function esc(s) { return String(s).replace(/'/g, "\\'"); }
+
+async function updateStatus(id, status) {
+  try {
+    const r = await fetch(`${API_ORDERS}/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Number(status)),
+    });
+    if (!r.ok) throw new Error(r.status);
+    notify('Статус обновлён');
+  } catch (e) {
+    notify('Ошибка обновления статуса', 'error');
+    loadOrders();
+  }
+}
+
+function editOrder(id, clientId, pickup, delivery, desc) {
+  editId = id;
+  document.getElementById('f-clientId').value = clientId;
+  document.getElementById('f-pickup').value   = pickup;
+  document.getElementById('f-delivery').value = delivery;
+  document.getElementById('f-desc').value     = desc;
+  document.getElementById('form-title').textContent = `Редактировать заказ #${id}`;
+  document.getElementById('btn-label').textContent  = 'Сохранить';
+  document.getElementById('btn-cancel').style.display = '';
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+function cancelEdit() {
+  editId = null;
+  document.getElementById('f-pickup').value   = '';
+  document.getElementById('f-delivery').value = '';
+  document.getElementById('f-desc').value     = '';
+  document.getElementById('form-title').textContent = 'Добавить заказ';
+  document.getElementById('btn-label').textContent  = 'Добавить';
+  document.getElementById('btn-cancel').style.display = 'none';
+}
+
+async function saveOrder() {
+  const clientId       = Number(document.getElementById('f-clientId').value);
+  const pickupAddress  = document.getElementById('f-pickup').value.trim();
+  const deliveryAddress = document.getElementById('f-delivery').value.trim();
+  const description    = document.getElementById('f-desc').value.trim() || null;
+
+  if (!clientId || !pickupAddress || !deliveryAddress) {
+    notify('Заполните Клиента, Адрес отправки и Адрес доставки', 'error');
+    return;
+  }
+
+  const body = { clientId, pickupAddress, deliveryAddress, description };
+
+  try {
+    let r;
+    if (editId) {
+      r = await fetch(`${API_ORDERS}/${editId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    } else {
+      r = await fetch(API_ORDERS, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }
+    if (!r.ok) throw new Error(await r.text() || r.status);
+    notify(editId ? 'Заказ обновлён' : 'Заказ добавлен');
+    cancelEdit();
+    loadOrders();
+  } catch (e) {
+    notify('Ошибка: ' + e.message, 'error');
+  }
+}
+
+async function deleteOrder(id) {
+  if (!confirm(`Удалить заказ #${id}?`)) return;
+  try {
+    const r = await fetch(`${API_ORDERS}/${id}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(r.status);
+    notify('Заказ удалён');
+    loadOrders();
+  } catch (e) {
+    notify('Ошибка удаления: ' + e.message, 'error');
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>
