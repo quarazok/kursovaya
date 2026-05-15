@@ -58,4 +58,23 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// Автоматически применяем миграции при старте с retry —
+// БД в Docker может прогреваться 10-30 секунд при первом запуске
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    for (int i = 0; i < 10; i++)
+    {
+        try
+        {
+            db.Database.Migrate();
+            break;
+        }
+        catch when (i < 9)
+        {
+            await Task.Delay(3000);
+        }
+    }
+}
+
 app.Run();
