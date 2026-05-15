@@ -60,6 +60,13 @@
 </div>
 
 <script>
+if (localStorage.getItem('role') === 'Client') {
+  localStorage.removeItem('token');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('firstName');
+  localStorage.removeItem('lastName');
+  localStorage.removeItem('role');
+}
 if (localStorage.getItem('token')) {
   window.location.href = 'dashboard.html';
 }

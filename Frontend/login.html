@@ -44,6 +44,14 @@
 </div>
 
 <script>
+// Если токен клиентский — чистим, чтобы не было редиректа на клиентский кабинет
+if (localStorage.getItem('role') === 'Client') {
+  localStorage.removeItem('token');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('firstName');
+  localStorage.removeItem('lastName');
+  localStorage.removeItem('role');
+}
 if (localStorage.getItem('token')) {
   window.location.href = 'dashboard.html';
 }
@@ -82,6 +90,12 @@ async function login() {
     }
 
     const data = await r.json();
+
+    if (data.role === 'Client') {
+      errEl.textContent = 'Это клиентский аккаунт. Используйте клиентский сайт.';
+      return;
+    }
+
     localStorage.setItem('token',     data.token);
     localStorage.setItem('userId',    data.id);
     localStorage.setItem('firstName', data.firstName);
