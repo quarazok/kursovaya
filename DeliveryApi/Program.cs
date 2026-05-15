@@ -1,4 +1,5 @@
 using DeliveryApi.Data;
+using DeliveryApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -75,6 +76,61 @@ using (var scope = app.Services.CreateScope())
             await Task.Delay(3000);
         }
     }
+
+    // Тестовые аккаунты для демонстрации. Идемпотентно: повторный запуск ничего не дублирует.
+    await SeedTestUserAsync(db, "test.employee@delivery.local", "Тест", "Сотрудник",
+                            "+70000000001", UserRole.Employee);
+    await SeedTestUserAsync(db, "test.admin@delivery.local", "Тест", "Админ",
+                            "+70000000002", UserRole.Admin);
+    await SeedTestClientAsync(db, "test.client@delivery.local", "Тест", "Клиент",
+                              "+70000000003");
 }
 
 app.Run();
+
+static async Task SeedTestUserAsync(AppDbContext db, string email, string firstName,
+                                    string lastName, string phone, UserRole role)
+{
+    if (await db.Users.AnyAsync(u => u.Email == email)) return;
+
+    db.Users.Add(new User
+    {
+        FirstName    = firstName,
+        LastName     = lastName,
+        Email        = email,
+        Phone        = phone,
+        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test1234"),
+        Role         = role,
+        CreatedAt    = DateTime.UtcNow,
+    });
+    await db.SaveChangesAsync();
+}
+
+static async Task SeedTestClientAsync(AppDbContext db, string email, string firstName,
+                                      string lastName, string phone)
+{
+    if (await db.Users.AnyAsync(u => u.Email == email)) return;
+
+    var user = new User
+    {
+        FirstName    = firstName,
+        LastName     = lastName,
+        Email        = email,
+        Phone        = phone,
+        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Test1234"),
+        Role         = UserRole.Client,
+        CreatedAt    = DateTime.UtcNow,
+    };
+    db.Users.Add(user);
+    await db.SaveChangesAsync();
+
+    db.Clients.Add(new Client
+    {
+        FirstName = firstName,
+        LastName  = lastName,
+        Phone     = phone,
+        Email     = email,
+        UserId    = user.Id,
+    });
+    await db.SaveChangesAsync();
+}
