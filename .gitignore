@@ -1,0 +1,15 @@
+# Секреты
+.env
+
+# .NET build artifacts
+bin/
+obj/
+*.user
+*.lscache
+
+# IDE
+.vs/
+.vscode/
+
+# Плагины
+ruvector.db
