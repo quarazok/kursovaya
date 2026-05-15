@@ -24,6 +24,10 @@
     .links a:hover { text-decoration:underline; }
     .back { display:block; text-align:center; margin-bottom:18px; font-size:13px; color:var(--muted); text-decoration:none; }
     .back:hover { color:var(--orange); }
+    .test-divider { display:flex; align-items:center; gap:10px; margin:18px 0 10px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+    .test-divider::before, .test-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+    .test-btn { width:100%; padding:9px; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--bg); color:#333; border-radius:var(--radius); cursor:pointer; transition:all 0.15s; }
+    .test-btn:hover { background:#FFF3EE; border-color:var(--orange); color:var(--orange); }
   </style>
 </head>
 <body>
@@ -44,6 +48,9 @@
 
   <div class="err" id="err"></div>
   <button class="btn" id="btn" onclick="login()">Войти</button>
+
+  <div class="test-divider">Тестовый аккаунт</div>
+  <button class="test-btn" onclick="quickLogin('test.client@delivery.local', 'Test1234')">Войти как клиент</button>
 
   <div class="links">
     Нет аккаунта? <a href="register.html">Зарегистрироваться</a>
@@ -93,6 +100,30 @@ async function login() {
     errEl.textContent = 'Не удалось подключиться к серверу';
   } finally {
     btn.disabled = false; btn.textContent = 'Войти';
+  }
+}
+
+async function quickLogin(email, password) {
+  const errEl = document.getElementById('err');
+  errEl.textContent = '';
+  try {
+    const r = await fetch('http://localhost:5206/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!r.ok) {
+      errEl.textContent = 'Тестовый аккаунт не найден. Перезапустите бэкенд.';
+      return;
+    }
+    const data = await r.json();
+    localStorage.setItem('client_token',     data.token);
+    localStorage.setItem('client_firstName', data.firstName);
+    localStorage.setItem('client_lastName',  data.lastName);
+    localStorage.setItem('client_role',      data.role);
+    window.location.href = 'dashboard.html';
+  } catch {
+    errEl.textContent = 'Не удалось подключиться к серверу';
   }
 }
 </script>

@@ -17,6 +17,11 @@
     .auth-link a { color: var(--orange); text-decoration: none; font-weight: 600; }
     .auth-link a:hover { text-decoration: underline; }
     .error-msg { color: #D32F2F; font-size: 13px; margin-top: 10px; text-align: center; min-height: 20px; }
+    .test-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .test-divider::before, .test-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .test-btn { padding: 9px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: var(--radius); cursor: pointer; transition: all 0.15s; }
+    .test-btn:hover { background: #FFF3EE; border-color: var(--orange); color: var(--orange); }
   </style>
 </head>
 <body>
@@ -37,6 +42,12 @@
   <div class="error-msg" id="error-msg"></div>
 
   <button class="btn btn-primary auth-btn" onclick="login()" id="btn-login">Войти</button>
+
+  <div class="test-divider">Тестовые аккаунты</div>
+  <div class="test-grid">
+    <button class="test-btn" onclick="quickLogin('test.employee@delivery.local', 'Test1234')">Сотрудник</button>
+    <button class="test-btn" onclick="quickLogin('test.admin@delivery.local', 'Test1234')">Админ</button>
+  </div>
 
   <div class="auth-link">
     Нет аккаунта? <a href="register.html">Зарегистрироваться</a>
@@ -108,6 +119,31 @@ async function login() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Войти';
+  }
+}
+
+async function quickLogin(email, password) {
+  const errEl = document.getElementById('error-msg');
+  errEl.textContent = '';
+  try {
+    const r = await fetch('http://localhost:5206/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!r.ok) {
+      errEl.textContent = 'Тестовый аккаунт не найден. Перезапустите бэкенд.';
+      return;
+    }
+    const data = await r.json();
+    localStorage.setItem('token',     data.token);
+    localStorage.setItem('userId',    data.id);
+    localStorage.setItem('firstName', data.firstName);
+    localStorage.setItem('lastName',  data.lastName);
+    localStorage.setItem('role',      data.role);
+    window.location.href = 'dashboard.html';
+  } catch {
+    errEl.textContent = 'Не удалось подключиться к серверу';
   }
 }
 </script>
