@@ -94,6 +94,10 @@ setupHeader();
 const API = 'http://localhost:5206/api/couriers';
 let editId = null;
 
+const isAdmin = localStorage.getItem('role') === 'Admin';
+const formCard = document.querySelectorAll('main .card')[1];
+if (!isAdmin) formCard.style.display = 'none';
+
 function notify(msg, type = 'success') {
   const el = document.getElementById('notification');
   el.textContent = msg;
@@ -140,6 +144,7 @@ function esc(s) { return String(s).replace(/'/g, "\\'"); }
 
 function editCourier(id, firstName, lastName, phone, email, isAvailable) {
   editId = id;
+  formCard.style.display = '';
   document.getElementById('f-firstName').value = firstName;
   document.getElementById('f-lastName').value = lastName;
   document.getElementById('f-phone').value = phone;
@@ -158,6 +163,7 @@ function cancelEdit() {
   document.getElementById('form-title').textContent = 'Добавить курьера';
   document.getElementById('btn-label').textContent = 'Добавить';
   document.getElementById('btn-cancel').style.display = 'none';
+  if (!isAdmin) formCard.style.display = 'none';
 }
 
 async function saveCourier() {
@@ -202,7 +208,11 @@ async function deleteCourier(id) {
   if (!confirm(`Удалить курьера #${id}?`)) return;
   try {
     const r = await fetch(`${API}/${id}`, { method: 'DELETE' });
-    if (!r.ok) throw new Error(r.status);
+    if (!r.ok) {
+      const msg = await r.text();
+      notify(msg || `Ошибка ${r.status}`, 'error');
+      return;
+    }
     notify('Курьер удалён');
     loadCouriers();
   } catch (e) {

@@ -99,6 +99,10 @@ const API_CLIENTS = 'http://localhost:5206/api/clients';
 let editId = null;
 let allClients = [];
 
+const isAdmin = localStorage.getItem('role') === 'Admin';
+const formCard = document.querySelectorAll('main .card')[1];
+if (!isAdmin) formCard.style.display = 'none';
+
 const STATUS_MAP = {
   0: ['New',      'new'],
   1: ['Назначен', 'assigned'],
@@ -195,6 +199,7 @@ async function updateStatus(id, status) {
 
 function editOrder(id, clientId, pickup, delivery, desc) {
   editId = id;
+  formCard.style.display = '';
   document.getElementById('f-clientId').value = clientId;
   document.getElementById('f-pickup').value   = pickup;
   document.getElementById('f-delivery').value = delivery;
@@ -213,6 +218,7 @@ function cancelEdit() {
   document.getElementById('form-title').textContent = 'Добавить заказ';
   document.getElementById('btn-label').textContent  = 'Добавить';
   document.getElementById('btn-cancel').style.display = 'none';
+  if (!isAdmin) formCard.style.display = 'none';
 }
 
 async function saveOrder() {
@@ -256,7 +262,11 @@ async function deleteOrder(id) {
   if (!confirm(`Удалить заказ #${id}?`)) return;
   try {
     const r = await fetch(`${API_ORDERS}/${id}`, { method: 'DELETE' });
-    if (!r.ok) throw new Error(r.status);
+    if (!r.ok) {
+      const msg = await r.text();
+      notify(msg || `Ошибка ${r.status}`, 'error');
+      return;
+    }
     notify('Заказ удалён');
     loadOrders();
   } catch (e) {
