@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryApi.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Employee,Admin")]
 [ApiController]
 [Route("api/[controller]")]
 public class ClientsController : ControllerBase
@@ -40,6 +40,7 @@ public class ClientsController : ControllerBase
 
     // POST api/clients
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] Client client)
     {
         _db.Clients.Add(client);
@@ -73,6 +74,10 @@ public class ClientsController : ControllerBase
 
         if (client == null)
             return NotFound();
+
+        var ordersCount = await _db.Orders.CountAsync(o => o.ClientId == id);
+        if (ordersCount > 0)
+            return BadRequest($"Нельзя удалить клиента: у него {ordersCount} заказ(ов). Сначала удалите заказы.");
 
         _db.Clients.Remove(client);
         await _db.SaveChangesAsync();

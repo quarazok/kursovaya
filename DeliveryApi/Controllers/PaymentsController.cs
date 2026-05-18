@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryApi.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Employee,Admin")]
 [ApiController]
 [Route("api/[controller]")]
 public class PaymentsController : ControllerBase

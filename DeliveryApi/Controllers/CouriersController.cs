@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryApi.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Employee,Admin")]
 [ApiController]
 [Route("api/[controller]")]
 public class CouriersController : ControllerBase
@@ -50,6 +50,7 @@ public class CouriersController : ControllerBase
 
     // POST api/couriers
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] Courier courier)
     {
         _db.Couriers.Add(courier);
@@ -84,6 +85,10 @@ public class CouriersController : ControllerBase
 
         if (courier == null)
             return NotFound();
+
+        var deliveriesCount = await _db.Deliveries.CountAsync(d => d.CourierId == id);
+        if (deliveriesCount > 0)
+            return BadRequest($"Нельзя удалить курьера: за ним закреплено {deliveriesCount} доставк(и). Сначала удалите доставки.");
 
         _db.Couriers.Remove(courier);
         await _db.SaveChangesAsync();

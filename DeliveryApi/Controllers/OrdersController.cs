@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryApi.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Employee,Admin")]
 [ApiController]
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase
@@ -50,6 +50,7 @@ public class OrdersController : ControllerBase
 
     // POST api/orders
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] Order order)
     {
         order.CreatedAt = DateTime.UtcNow;
@@ -100,6 +101,12 @@ public class OrdersController : ControllerBase
 
         if (order == null)
             return NotFound();
+
+        if (await _db.Deliveries.AnyAsync(d => d.OrderId == id))
+            return BadRequest("Нельзя удалить заказ: есть связанная доставка. Сначала удалите доставку.");
+
+        if (await _db.Payments.AnyAsync(p => p.OrderId == id))
+            return BadRequest("Нельзя удалить заказ: есть связанная оплата. Сначала удалите оплату.");
 
         _db.Orders.Remove(order);
         await _db.SaveChangesAsync();
