@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryApi.Controllers;
 
-[Authorize(Roles = "Employee,Admin")]
+[Authorize(Roles = Roles.AllStaff)]
 [ApiController]
 [Route("api/[controller]")]
 public class PaymentsController : ControllerBase
@@ -42,8 +42,9 @@ public class PaymentsController : ControllerBase
         return Ok(payment);
     }
 
-    // POST api/payments
+    // POST api/payments — выставление счёта: оператор или бухгалтер
     [HttpPost]
+    [Authorize(Roles = "Admin,Operator,Accountant")]
     public async Task<IActionResult> Create([FromBody] Payment payment)
     {
         var order = await _db.Orders.FindAsync(payment.OrderId);
@@ -60,6 +61,7 @@ public class PaymentsController : ControllerBase
 
     // PUT api/payments/5
     [HttpPut("{id}")]
+    [Authorize(Roles = Roles.Accounting)]
     public async Task<IActionResult> Update(int id, [FromBody] Payment updated)
     {
         var payment = await _db.Payments.FindAsync(id);
@@ -74,8 +76,9 @@ public class PaymentsController : ControllerBase
         return Ok(payment);
     }
 
-    // PATCH api/payments/5/status
+    // PATCH api/payments/5/status — отметить оплату может только бухгалтерия
     [HttpPatch("{id}/status")]
+    [Authorize(Roles = Roles.Accounting)]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] PaymentStatus status)
     {
         var payment = await _db.Payments.FindAsync(id);
@@ -95,6 +98,7 @@ public class PaymentsController : ControllerBase
 
     // DELETE api/payments/5
     [HttpDelete("{id}")]
+    [Authorize(Roles = Roles.Accounting)]
     public async Task<IActionResult> Delete(int id)
     {
         var payment = await _db.Payments.FindAsync(id);

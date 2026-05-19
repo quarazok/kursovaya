@@ -99,9 +99,12 @@ const API_CLIENTS = 'http://localhost:5206/api/clients';
 let editId = null;
 let allClients = [];
 
-const isAdmin = localStorage.getItem('role') === 'Admin';
+// Создавать заказы — только Админ. Редактировать/удалять/менять статус — Админ и Оператор.
+const canCreate     = hasRole('Admin');
+const canModify     = hasRole('Admin', 'Operator');
+const canEditStatus = hasRole('Admin', 'Operator');
 const formCard = document.querySelectorAll('main .card')[1];
-if (!isAdmin) formCard.style.display = 'none';
+if (!canCreate) formCard.style.display = 'none';
 
 const STATUS_MAP = {
   0: ['New',      'new'],
@@ -154,24 +157,24 @@ async function loadOrders() {
       const statusOptions = Object.entries(STATUS_MAP).map(([val, [lbl]]) =>
         `<option value="${val}" ${o.status == val ? 'selected' : ''}>${lbl}</option>`
       ).join('');
+      const statusCell = canEditStatus
+        ? `<select class="inline-select" onchange="updateStatus(${o.id}, this.value)">${statusOptions}</select>`
+        : `<span class="badge badge-${cls}">${label}</span>`;
+      const actions = canModify
+        ? `<div class="actions-cell">
+            <button class="btn btn-secondary btn-sm" onclick="editOrder(${o.id},${o.clientId},'${esc(o.pickupAddress)}','${esc(o.deliveryAddress)}','${esc(o.description ?? '')}')">Изменить</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteOrder(${o.id})">Удалить</button>
+          </div>`
+        : '<span style="color:var(--text-muted)">—</span>';
       return `<tr>
         <td>${o.id}</td>
         <td>${clientName}</td>
         <td>${o.pickupAddress}</td>
         <td>${o.deliveryAddress}</td>
         <td>${o.description ?? '—'}</td>
-        <td>
-          <select class="inline-select" onchange="updateStatus(${o.id}, this.value)">
-            ${statusOptions}
-          </select>
-        </td>
+        <td>${statusCell}</td>
         <td>${date}</td>
-        <td>
-          <div class="actions-cell">
-            <button class="btn btn-secondary btn-sm" onclick="editOrder(${o.id},${o.clientId},'${esc(o.pickupAddress)}','${esc(o.deliveryAddress)}','${esc(o.description ?? '')}')">Изменить</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteOrder(${o.id})">Удалить</button>
-          </div>
-        </td>
+        <td>${actions}</td>
       </tr>`;
     }).join('');
   } catch (e) {
@@ -218,7 +221,7 @@ function cancelEdit() {
   document.getElementById('form-title').textContent = 'Добавить заказ';
   document.getElementById('btn-label').textContent  = 'Добавить';
   document.getElementById('btn-cancel').style.display = 'none';
-  if (!isAdmin) formCard.style.display = 'none';
+  if (!canCreate) formCard.style.display = 'none';
 }
 
 async function saveOrder() {

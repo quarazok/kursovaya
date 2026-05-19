@@ -81,6 +81,10 @@
 requireAuth();
 setupHeader();
 
+// Создавать счёт может оператор/админ/бухгалтер. Менять статус и удалять — только бухгалтерия (Accountant/Admin).
+const canCreate   = hasRole('Admin', 'Operator', 'Accountant');
+const canAccount  = hasRole('Admin', 'Accountant');
+
 const API_BASE     = 'http://localhost:5206/api';
 const API_PAYMENTS = `${API_BASE}/payments`;
 
@@ -99,6 +103,10 @@ function notify(msg, type = 'success') {
 }
 
 async function init() {
+  // Скрываем форму создания платежа, если роль не позволяет
+  const createCard = document.querySelectorAll('main .card')[1];
+  if (!canCreate && createCard) createCard.style.display = 'none';
+
   try {
     const orders = await fetch(`${API_BASE}/orders`).then(r => r.json());
     const sel = document.getElementById('f-orderId');
@@ -130,10 +138,16 @@ async function loadPayments() {
       const paidAt  = p.paidAt ? new Date(p.paidAt).toLocaleString('ru-RU') : '—';
       const amount  = Number(p.amount).toLocaleString('ru-RU', { minimumFractionDigits: 2 });
 
-      const actionBtns = p.status === 0
+      const statusBtns = (p.status === 0 && canAccount)
         ? `<button class="btn btn-success btn-sm" onclick="updateStatus(${p.id}, 1)">Оплачено</button>
            <button class="btn btn-danger btn-sm" onclick="updateStatus(${p.id}, 2)">Отменить</button>`
         : '';
+      const deleteBtn = canAccount
+        ? `<button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})">Удалить</button>`
+        : '';
+      const actionsHtml = (statusBtns || deleteBtn)
+        ? `<div class="actions-cell">${statusBtns}${deleteBtn}</div>`
+        : '<span style="color:var(--text-muted)">—</span>';
 
       return `<tr>
         <td>${p.id}</td>
@@ -142,12 +156,7 @@ async function loadPayments() {
         <td>${method}</td>
         <td><span class="badge badge-${cls}">${label}</span></td>
         <td>${paidAt}</td>
-        <td>
-          <div class="actions-cell">
-            ${actionBtns}
-            <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})">Удалить</button>
-          </div>
-        </td>
+        <td>${actionsHtml}</td>
       </tr>`;
     }).join('');
   } catch (e) {

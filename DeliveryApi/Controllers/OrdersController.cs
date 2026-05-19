@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryApi.Controllers;
 
-[Authorize(Roles = "Employee,Admin")]
+[Authorize(Roles = Roles.AllStaff)]
 [ApiController]
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase
@@ -48,9 +48,9 @@ public class OrdersController : ControllerBase
         return Ok(order);
     }
 
-    // POST api/orders
+    // POST api/orders — создание только админом
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Create([FromBody] Order order)
     {
         order.CreatedAt = DateTime.UtcNow;
@@ -63,6 +63,7 @@ public class OrdersController : ControllerBase
 
     // PUT api/orders/5
     [HttpPut("{id}")]
+    [Authorize(Roles = Roles.AdminOrOperator)]
     public async Task<IActionResult> Update(int id, [FromBody] Order updated)
     {
         var order = await _db.Orders.FindAsync(id);
@@ -79,8 +80,9 @@ public class OrdersController : ControllerBase
         return Ok(order);
     }
 
-    // PATCH api/orders/5/status
+    // PATCH api/orders/5/status — только админ и оператор
     [HttpPatch("{id}/status")]
+    [Authorize(Roles = Roles.AdminOrOperator)]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] OrderStatus status)
     {
         var order = await _db.Orders.FindAsync(id);
@@ -95,6 +97,7 @@ public class OrdersController : ControllerBase
 
     // DELETE api/orders/5
     [HttpDelete("{id}")]
+    [Authorize(Roles = Roles.AdminOrOperator)]
     public async Task<IActionResult> Delete(int id)
     {
         var order = await _db.Orders.FindAsync(id);

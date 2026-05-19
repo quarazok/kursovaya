@@ -35,7 +35,8 @@
   </div>
   <div class="form-group">
     <label>Телефон</label>
-    <input type="tel" id="phone" placeholder="+7 900 000-00-00" autocomplete="tel">
+    <input type="tel" id="phone" placeholder="+7XXXXXXXXXX" maxlength="12" pattern="^\+7\d{10}$" autocomplete="tel">
+    <small style="color:var(--text-muted);font-size:11px">Формат: +7 и 10 цифр (всего 12 символов)</small>
   </div>
   <div class="form-group">
     <label>Email</label>
@@ -95,6 +96,11 @@ async function register() {
 
   if (password.length < 6) {
     errEl.textContent = 'Пароль должен содержать не менее 6 символов';
+    return;
+  }
+
+  if (!/^\+7\d{10}$/.test(phone)) {
+    errEl.textContent = 'Телефон должен быть в формате +7XXXXXXXXXX (12 символов)';
     return;
   }
 

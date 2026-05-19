@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryApi.Controllers;
 
-[Authorize(Roles = "Employee,Admin")]
+[Authorize(Roles = Roles.AllStaff)]
 [ApiController]
 [Route("api/[controller]")]
 public class ClientsController : ControllerBase
@@ -38,49 +38,6 @@ public class ClientsController : ControllerBase
         return Ok(client);
     }
 
-    // POST api/clients
-    [HttpPost]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Create([FromBody] Client client)
-    {
-        _db.Clients.Add(client);
-        await _db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = client.Id }, client);
-    }
-
-    // PUT api/clients/5
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] Client updated)
-    {
-        var client = await _db.Clients.FindAsync(id);
-
-        if (client == null)
-            return NotFound();
-
-        client.FirstName = updated.FirstName;
-        client.LastName  = updated.LastName;
-        client.Phone     = updated.Phone;
-        client.Email     = updated.Email;
-
-        await _db.SaveChangesAsync();
-        return Ok(client);
-    }
-
-    // DELETE api/clients/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var client = await _db.Clients.FindAsync(id);
-
-        if (client == null)
-            return NotFound();
-
-        var ordersCount = await _db.Orders.CountAsync(o => o.ClientId == id);
-        if (ordersCount > 0)
-            return BadRequest($"Нельзя удалить клиента: у него {ordersCount} заказ(ов). Сначала удалите заказы.");
-
-        _db.Clients.Remove(client);
-        await _db.SaveChangesAsync();
-        return NoContent();
-    }
+    // Создание/изменение/удаление клиентов отключено: клиенты регистрируются
+    // самостоятельно через клиентский портал.
 }

@@ -38,50 +38,12 @@
             <th>Телефон</th>
             <th>Email</th>
             <th>Статус</th>
-            <th>Действия</th>
           </tr>
         </thead>
         <tbody id="couriers-tbody">
-          <tr><td colspan="7" class="empty-state">Загрузка...</td></tr>
+          <tr><td colspan="6" class="empty-state">Загрузка...</td></tr>
         </tbody>
       </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title" id="form-title">Добавить курьера</span>
-    </div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Имя</label>
-        <input type="text" id="f-firstName" placeholder="Алексей">
-      </div>
-      <div class="form-group">
-        <label>Фамилия</label>
-        <input type="text" id="f-lastName" placeholder="Смирнов">
-      </div>
-      <div class="form-group">
-        <label>Телефон</label>
-        <input type="text" id="f-phone" placeholder="+7 900 000-00-00">
-      </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="f-email" placeholder="courier@example.com">
-      </div>
-      <div class="form-group">
-        <label>Доступность</label>
-        <select id="f-available">
-          <option value="true">Свободен</option>
-          <option value="false">Занят</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-primary" onclick="saveCourier()">
-        <span id="btn-label">Добавить</span>
-      </button>
-      <button class="btn btn-secondary" id="btn-cancel" onclick="cancelEdit()" style="display:none">Отмена</button>
     </div>
   </div>
 </main>
@@ -92,18 +54,6 @@ requireAuth();
 setupHeader();
 
 const API = 'http://localhost:5206/api/couriers';
-let editId = null;
-
-const isAdmin = localStorage.getItem('role') === 'Admin';
-const formCard = document.querySelectorAll('main .card')[1];
-if (!isAdmin) formCard.style.display = 'none';
-
-function notify(msg, type = 'success') {
-  const el = document.getElementById('notification');
-  el.textContent = msg;
-  el.className = `notification ${type} show`;
-  setTimeout(() => el.classList.remove('show'), 3000);
-}
 
 async function loadCouriers() {
   try {
@@ -112,7 +62,7 @@ async function loadCouriers() {
     const couriers = await r.json();
     const tbody = document.getElementById('couriers-tbody');
     if (couriers.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Курьеров пока нет</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Курьеров пока нет</td></tr>';
       return;
     }
     tbody.innerHTML = couriers.map(c => {
@@ -126,97 +76,11 @@ async function loadCouriers() {
         <td>${c.phone}</td>
         <td>${c.email ?? '—'}</td>
         <td>${badge}</td>
-        <td>
-          <div class="actions-cell">
-            <button class="btn btn-secondary btn-sm" onclick="editCourier(${c.id},'${esc(c.firstName)}','${esc(c.lastName)}','${esc(c.phone)}','${esc(c.email ?? '')}',${c.isAvailable})">Изменить</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteCourier(${c.id})">Удалить</button>
-          </div>
-        </td>
       </tr>`;
     }).join('');
   } catch (e) {
     document.getElementById('couriers-tbody').innerHTML =
-      '<tr><td colspan="7" class="empty-state" style="color:#D32F2F">Ошибка загрузки. Проверьте, запущен ли сервер.</td></tr>';
-  }
-}
-
-function esc(s) { return String(s).replace(/'/g, "\\'"); }
-
-function editCourier(id, firstName, lastName, phone, email, isAvailable) {
-  editId = id;
-  formCard.style.display = '';
-  document.getElementById('f-firstName').value = firstName;
-  document.getElementById('f-lastName').value = lastName;
-  document.getElementById('f-phone').value = phone;
-  document.getElementById('f-email').value = email;
-  document.getElementById('f-available').value = String(isAvailable);
-  document.getElementById('form-title').textContent = `Редактировать курьера #${id}`;
-  document.getElementById('btn-label').textContent = 'Сохранить';
-  document.getElementById('btn-cancel').style.display = '';
-  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-}
-
-function cancelEdit() {
-  editId = null;
-  ['f-firstName','f-lastName','f-phone','f-email'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f-available').value = 'true';
-  document.getElementById('form-title').textContent = 'Добавить курьера';
-  document.getElementById('btn-label').textContent = 'Добавить';
-  document.getElementById('btn-cancel').style.display = 'none';
-  if (!isAdmin) formCard.style.display = 'none';
-}
-
-async function saveCourier() {
-  const firstName   = document.getElementById('f-firstName').value.trim();
-  const lastName    = document.getElementById('f-lastName').value.trim();
-  const phone       = document.getElementById('f-phone').value.trim();
-  const email       = document.getElementById('f-email').value.trim() || null;
-  const isAvailable = document.getElementById('f-available').value === 'true';
-
-  if (!firstName || !lastName || !phone) {
-    notify('Заполните Имя, Фамилию и Телефон', 'error');
-    return;
-  }
-
-  const body = { firstName, lastName, phone, email, isAvailable };
-
-  try {
-    let r;
-    if (editId) {
-      r = await fetch(`${API}/${editId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-    } else {
-      r = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-    }
-    if (!r.ok) throw new Error(await r.text() || r.status);
-    notify(editId ? 'Курьер обновлён' : 'Курьер добавлен');
-    cancelEdit();
-    loadCouriers();
-  } catch (e) {
-    notify('Ошибка: ' + e.message, 'error');
-  }
-}
-
-async function deleteCourier(id) {
-  if (!confirm(`Удалить курьера #${id}?`)) return;
-  try {
-    const r = await fetch(`${API}/${id}`, { method: 'DELETE' });
-    if (!r.ok) {
-      const msg = await r.text();
-      notify(msg || `Ошибка ${r.status}`, 'error');
-      return;
-    }
-    notify('Курьер удалён');
-    loadCouriers();
-  } catch (e) {
-    notify('Ошибка удаления: ' + e.message, 'error');
+      '<tr><td colspan="6" class="empty-state" style="color:#D32F2F">Ошибка загрузки. Проверьте, запущен ли сервер.</td></tr>';
   }
 }
 

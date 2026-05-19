@@ -73,6 +73,19 @@
 requireAuth();
 setupHeader();
 
+// Создание назначения — оператор/админ. Завершение — также курьер (только свою). Удаление — оператор/админ.
+const canAssign   = hasRole('Admin', 'Operator');
+const canDelete   = hasRole('Admin', 'Operator');
+const isCourier   = hasRole('Courier');
+const myEmail     = (localStorage.getItem('email') ?? '').toLowerCase();
+
+// Может ли текущий пользователь завершить эту доставку?
+function canCompleteDelivery(d) {
+  if (!hasRole('Admin', 'Operator', 'Courier')) return false;
+  if (!isCourier) return true; // Админ/Оператор завершают любую
+  return (d.courier?.email ?? '').toLowerCase() === myEmail;
+}
+
 const API_BASE      = 'http://localhost:5206/api';
 const API_DELIVERIES = `${API_BASE}/deliveries`;
 
@@ -91,6 +104,10 @@ function notify(msg, type = 'success') {
 }
 
 async function init() {
+  // Скрываем форму назначения для курьера
+  const assignCard = document.querySelectorAll('main .card')[1];
+  if (!canAssign && assignCard) assignCard.style.display = 'none';
+
   try {
     const [orders, couriers] = await Promise.all([
       fetch(`${API_BASE}/orders`).then(r => r.json()),
@@ -132,9 +149,15 @@ async function loadDeliveries() {
       const courierName = d.courier ? `${d.courier.firstName} ${d.courier.lastName}` : `#${d.courierId}`;
       const assigned  = new Date(d.assignedAt).toLocaleString('ru-RU');
       const completed = d.completedAt ? new Date(d.completedAt).toLocaleString('ru-RU') : '—';
-      const completeBtn = d.status !== 2
+      const completeBtn = (d.status !== 2 && canCompleteDelivery(d))
         ? `<button class="btn btn-success btn-sm" onclick="completeDelivery(${d.id})">Завершить</button>`
         : '';
+      const deleteBtn = canDelete
+        ? `<button class="btn btn-danger btn-sm" onclick="deleteDelivery(${d.id})">Удалить</button>`
+        : '';
+      const actionsHtml = (completeBtn || deleteBtn)
+        ? `<div class="actions-cell">${completeBtn}${deleteBtn}</div>`
+        : '<span style="color:var(--text-muted)">—</span>';
       return `<tr>
         <td>${d.id}</td>
         <td>#${d.orderId}</td>
@@ -142,12 +165,7 @@ async function loadDeliveries() {
         <td>${assigned}</td>
         <td>${completed}</td>
         <td><span class="badge badge-${cls}">${label}</span></td>
-        <td>
-          <div class="actions-cell">
-            ${completeBtn}
-            <button class="btn btn-danger btn-sm" onclick="deleteDelivery(${d.id})">Удалить</button>
-          </div>
-        </td>
+        <td>${actionsHtml}</td>
       </tr>`;
     }).join('');
   } catch (e) {

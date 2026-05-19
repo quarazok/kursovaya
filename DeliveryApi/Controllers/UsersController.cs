@@ -43,23 +43,29 @@ public class UsersController : ControllerBase
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
-        var totalUsers     = await _db.Users.CountAsync();
-        var totalAdmins    = await _db.Users.CountAsync(u => u.Role == UserRole.Admin);
-        var totalEmployees = await _db.Users.CountAsync(u => u.Role == UserRole.Employee);
-        var totalClients   = await _db.Clients.CountAsync();
-        var totalOrders    = await _db.Orders.CountAsync();
-        var totalCouriers  = await _db.Couriers.CountAsync();
-        var totalDeliveries = await _db.Deliveries.CountAsync();
-        var totalPayments  = await _db.Payments.CountAsync();
-        var totalRevenue   = await _db.Payments
+        var totalUsers       = await _db.Users.CountAsync();
+        var totalAdmins      = await _db.Users.CountAsync(u => u.Role == UserRole.Admin);
+        var totalOperators   = await _db.Users.CountAsync(u => u.Role == UserRole.Operator);
+        var totalCouriersUsr = await _db.Users.CountAsync(u => u.Role == UserRole.Courier);
+        var totalAccountants = await _db.Users.CountAsync(u => u.Role == UserRole.Accountant);
+        var totalStaff       = totalAdmins + totalOperators + totalCouriersUsr + totalAccountants;
+        var totalClients     = await _db.Clients.CountAsync();
+        var totalOrders      = await _db.Orders.CountAsync();
+        var totalCouriers    = await _db.Couriers.CountAsync();
+        var totalDeliveries  = await _db.Deliveries.CountAsync();
+        var totalPayments    = await _db.Payments.CountAsync();
+        var totalRevenue     = await _db.Payments
             .Where(p => p.Status == PaymentStatus.Paid)
             .SumAsync(p => p.Amount);
 
         return Ok(new
         {
             totalUsers,
+            totalStaff,
             totalAdmins,
-            totalEmployees,
+            totalOperators,
+            totalCouriersUsr,
+            totalAccountants,
             totalClients,
             totalOrders,
             totalCouriers,
@@ -69,32 +75,5 @@ public class UsersController : ControllerBase
         });
     }
 
-    // PATCH api/users/5/role
-    [HttpPatch("{id}/role")]
-    public async Task<IActionResult> UpdateRole(int id, [FromBody] UserRole role)
-    {
-        var user = await _db.Users.FindAsync(id);
-
-        if (user == null)
-            return NotFound();
-
-        user.Role = role;
-        await _db.SaveChangesAsync();
-
-        return Ok(new { user.Id, user.FirstName, user.LastName, user.Email, user.Role });
-    }
-
-    // DELETE api/users/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var user = await _db.Users.FindAsync(id);
-
-        if (user == null)
-            return NotFound();
-
-        _db.Users.Remove(user);
-        await _db.SaveChangesAsync();
-        return NoContent();
-    }
+    // Изменение/удаление пользователей отключено: справочник read-only.
 }

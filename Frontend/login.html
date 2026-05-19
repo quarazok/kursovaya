@@ -20,6 +20,7 @@
     .test-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
     .test-divider::before, .test-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
     .test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .test-grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .test-btn { padding: 9px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: var(--radius); cursor: pointer; transition: all 0.15s; }
     .test-btn:hover { background: #FFF3EE; border-color: var(--orange); color: var(--orange); }
   </style>
@@ -43,10 +44,12 @@
 
   <button class="btn btn-primary auth-btn" onclick="login()" id="btn-login">Войти</button>
 
-  <div class="test-divider">Тестовые аккаунты</div>
-  <div class="test-grid">
-    <button class="test-btn" onclick="quickLogin('test.employee@delivery.local', 'Test1234')">Сотрудник</button>
-    <button class="test-btn" onclick="quickLogin('test.admin@delivery.local', 'Test1234')">Админ</button>
+  <div class="test-divider">Тестовые аккаунты сотрудников</div>
+  <div class="test-grid-4">
+    <button class="test-btn" onclick="quickLogin('test.admin@delivery.local',      'Test1234')">Вход как Админ</button>
+    <button class="test-btn" onclick="quickLogin('test.operator@delivery.local',   'Test1234')">Вход как Оператор</button>
+    <button class="test-btn" onclick="quickLogin('test.courier@delivery.local',    'Test1234')">Вход как Курьер</button>
+    <button class="test-btn" onclick="quickLogin('test.accountant@delivery.local', 'Test1234')">Вход как Бухгалтер</button>
   </div>
 
   <div class="auth-link">
@@ -55,8 +58,10 @@
 </div>
 
 <script>
-// Если токен клиентский — чистим, чтобы не было редиректа на клиентский кабинет
-if (localStorage.getItem('role') === 'Client') {
+// Если в storage остался неподходящий токен (клиент или устаревшая роль) — чистим.
+const STAFF_ROLES_OK = ['Admin', 'Operator', 'Courier', 'Accountant'];
+const storedRole = localStorage.getItem('role');
+if (storedRole && !STAFF_ROLES_OK.includes(storedRole)) {
   localStorage.removeItem('token');
   localStorage.removeItem('userId');
   localStorage.removeItem('firstName');
@@ -111,6 +116,7 @@ async function login() {
     localStorage.setItem('userId',    data.id);
     localStorage.setItem('firstName', data.firstName);
     localStorage.setItem('lastName',  data.lastName);
+    localStorage.setItem('email',     data.email);
     localStorage.setItem('role',      data.role);
 
     window.location.href = 'dashboard.html';
@@ -140,6 +146,7 @@ async function quickLogin(email, password) {
     localStorage.setItem('userId',    data.id);
     localStorage.setItem('firstName', data.firstName);
     localStorage.setItem('lastName',  data.lastName);
+    localStorage.setItem('email',     data.email);
     localStorage.setItem('role',      data.role);
     window.location.href = 'dashboard.html';
   } catch {

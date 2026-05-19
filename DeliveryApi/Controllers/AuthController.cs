@@ -32,6 +32,9 @@ public class AuthController : ControllerBase
         if (dto.Password.Length < 6)
             return BadRequest("Пароль должен содержать не менее 6 символов");
 
+        if (!PhoneValidator.IsValid(dto.Phone))
+            return BadRequest(PhoneValidator.ErrorMessage);
+
         if (await _db.Users.AnyAsync(u => u.Email == dto.Email))
             return BadRequest("Пользователь с таким email уже существует");
 
@@ -45,7 +48,7 @@ public class AuthController : ControllerBase
             Email        = dto.Email,
             Phone        = dto.Phone,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            Role         = UserRole.Employee,
+            Role         = UserRole.Operator,
             CreatedAt    = DateTime.UtcNow,
         };
 

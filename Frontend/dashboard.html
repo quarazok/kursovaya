@@ -84,6 +84,13 @@
 requireAuth();
 setupHeader();
 
+// Скрываем плитки, на которые у текущей роли нет доступа.
+document.querySelectorAll('.stats-grid a.stat-card').forEach(a => {
+  const href = (a.getAttribute('href') || '').toLowerCase();
+  const allowed = PAGE_ACCESS[href];
+  if (allowed && !allowed.includes(currentRole())) a.style.display = 'none';
+});
+
 const API = 'http://localhost:5206/api';
 
 const statusLabels = {
